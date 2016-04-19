@@ -1,0 +1,31 @@
+
+buildscript {
+
+  repositories {
+    mavenLocal()
+    mavenCentral()
+  }
+
+}
+
+plugins {
+  id 'org.liquibase.gradle' version '1.1.0'
+  id 'org.sonarqube' version '1.0'
+}
+
+description = 'Random Test Code'
+
+allprojects {
+
+  apply plugin: 'idea'
+  apply plugin: 'groovy'
+  group = 'com.taulia.ericanderson'
+
+}
+
+
+task wrapper(type: Wrapper) {
+  description = 'Configures the gradle wrapper'
+  gradleVersion = '2.4'
+}
+
