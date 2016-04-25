@@ -1,0 +1,26 @@
+<beans
+  xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:cml="http://camel.apache.org/schema/spring"
+  xsi:schemaLocation="
+    http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring-2.13.0.xsd">
+
+  <cml:camelContext id="camel" depends-on="broker" shutdownRunningTask="CompleteAllTasks">
+
+    <cml:route>
+      <cml:from
+        uri="activemq:queue:test.queue?concurrentConsumers=3&amp;maxConcurrentConsumers=5&amp;transacted=true&amp;lazyCreateTransactionManager=false"/>
+      <cml:delay asyncDelayed="true">
+        <cml:header>AMQ_SCHEDULED_DELAY</cml:header>
+      </cml:delay>
+      <cml:to uri="activemq:queue:test.queue.delayed"/>
+    </cml:route>
+
+   </cml:camelContext>
+
+  <bean id="activemq" class="org.apache.activemq.camel.component.ActiveMQComponent">
+     <property name="brokerURL" value="tcp://localhost:'61616"/>
+  </bean>
+
+</beans>
