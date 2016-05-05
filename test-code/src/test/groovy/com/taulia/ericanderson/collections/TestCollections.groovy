@@ -15,4 +15,14 @@ class TestCollections {
 
   }
 
+
+  @Test
+  void testEvery() {
+
+    assert ![false,true,true].every { it }
+    assert ![true,true,false].every { it }
+    assert [true,true,true].every { it }
+
+  }
+
 }
