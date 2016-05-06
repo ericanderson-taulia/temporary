@@ -12,6 +12,7 @@ def camelVersion = '2.17.0'
 
 dependencies {
 
+  compile 'org.apache.cxf:cxf:3.1.6'
   compile 'org.apache.geronimo.specs:geronimo-jms_1.1_spec:1.1.1'
   compile "org.apache.camel:camel-core:${camelVersion}"
   compile "org.apache.camel:camel-jms:${camelVersion}"
@@ -21,6 +22,7 @@ dependencies {
 
   compile 'org.codehaus.groovy:groovy:2.4.0'
   compile "org.codehaus.gpars:gpars:1.2.1"
+  compile 'javax.servlet:servlet-api:2.5'
 
   compile 'org.apache.logging.log4j:log4j-1.2-api:2.5'
 

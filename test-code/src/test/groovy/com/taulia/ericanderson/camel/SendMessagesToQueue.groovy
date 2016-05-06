@@ -4,6 +4,8 @@ import com.google.common.base.Stopwatch
 import com.taulia.ericanderson.BasicTest
 import com.taulia.ericanderson.jms.ActiveMQConnections
 import groovy.util.logging.Log4j
+import groovy.util.logging.Log4j2
+import groovy.util.logging.Slf4j
 import org.apache.camel.CamelContext
 import org.apache.camel.Exchange
 import org.apache.camel.Processor
@@ -16,7 +18,7 @@ import org.junit.Test
 import java.text.SimpleDateFormat
 import java.util.concurrent.TimeUnit
 
-@Log4j
+@Log4j2
 class SendMessagesToQueue extends BasicTest {
 
   private static final Random random = new Random()
@@ -26,11 +28,14 @@ class SendMessagesToQueue extends BasicTest {
 
   @Test
   void testRemoveMessages() {
+
     def myProcessor = new Processor() {
       public void process(Exchange exchange) {
 
+        println exchange.getIn().getHeaders()
+
         println("Recieved message and sleeping ${simpleDateFormat.format(new Date(System.currentTimeMillis()))}")
-        Thread.sleep(2000)
+        Thread.sleep(20000)
 
       }
     }

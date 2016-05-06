@@ -20,7 +20,7 @@ import java.util.concurrent.ThreadPoolExecutor
 
 class SendAndVerifyMessagesTest extends BasicTest {
 
-  private final int MESSAGE_COUNT = 300
+  private final int MESSAGE_COUNT = 30
 
   private final int PRODUCER_THREAD_COUNT = 15
 
@@ -58,22 +58,24 @@ class SendAndVerifyMessagesTest extends BasicTest {
       }
     }
 
-    CamelContext context = new DefaultCamelContext()
-    context.addComponent("jms-producer", JmsComponent.jmsComponentAutoAcknowledge(ActiveMQConnections.TAULIA_AMQ_LEVELDB_FAILOVER.connectionFactory))
-    context.addComponent("jms-consumer", JmsComponent.jmsComponentAutoAcknowledge(ActiveMQConnections.TAULIA_AMQ_LEVELDB_FAILOVER.connectionFactory))
+    CamelContext producerContext = new DefaultCamelContext()
+    producerContext.addComponent("jms-producer", JmsComponent.jmsComponentAutoAcknowledge(ActiveMQConnections.TAULIA_AMQ_LEVELDB_FAILOVER.connectionFactory))
+    producerContext.start()
+
+    CamelContext consumerContext = new DefaultCamelContext()
+    consumerContext.addComponent("jms-consumer", JmsComponent.jmsComponentAutoAcknowledge(ActiveMQConnections.TAULIA_AMQ_LEVELDB_FAILOVER.connectionFactory))
     CONSUMER_THREAD_COUNT.times {
-      context.addRoutes(new RouteBuilder() {
+      consumerContext.addRoutes(new RouteBuilder() {
         public void configure() {
           from("jms-consumer:queue:a1.test.queue.delayed").process(messageProcessor)
         }
       })
     }
-    context.start()
 
     def listOfFutures = []
     ThreadPoolExecutor executor = Executors.newFixedThreadPool(PRODUCER_THREAD_COUNT)
     PRODUCER_THREAD_COUNT.times {
-      listOfFutures << executor.submit( new Producer(context) )
+      listOfFutures << executor.submit( new Producer(producerContext) )
     }
 
     while (! listOfFutures.every { Future future -> future.done } ) {
