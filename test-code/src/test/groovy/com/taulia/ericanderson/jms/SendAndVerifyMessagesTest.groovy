@@ -89,7 +89,8 @@ class SendAndVerifyMessagesTest extends BasicTest {
     }
 
     executor.shutdownNow()
-    context.stop()
+    producerContext.stop()
+    consumerContext.stop()
     stopwatch.stop()
 
     assert messageTable.size() == 0
