@@ -22,17 +22,31 @@ import java.util.concurrent.ThreadPoolExecutor
 @Log4j2
 class SendAndVerifyMessagesTest extends BasicTest {
 
-  private final int MESSAGE_COUNT = 30
 
-  private final int PRODUCER_THREAD_COUNT = 15
+  /************************************************************/
+  /* Adjustable settings
+  /************************************************************/
 
-  private final int CONSUMER_THREAD_COUNT = 1
+  private static final int MESSAGE_COUNT = 100
+
+  private static final int PRODUCER_THREAD_COUNT = 20
+
+  private static final int CONSUMER_THREAD_COUNT = 1
+
+  private static final int CONSUMER_THREAD_WAIT = 1000
 
   /**
    * Time to wait for consumers to finish consuming all messages. This is the amount of time in seconds, that the test
    * will wait since the last consumed message before terminating.
    */
-  private final int TIME_TO_WAIT = 10
+  private static final int TIME_TO_WAIT = 10
+
+  /**
+   * The connection factory for the test
+   */
+  private static final ActiveMQConnections CONNECTION = ActiveMQConnections.TAULIA_AMQ_FAILOVER
+
+  /************************************************************/
 
   static final String ID_KEY = 'ID'
 
@@ -44,7 +58,7 @@ class SendAndVerifyMessagesTest extends BasicTest {
 
   volatile long lastTimeConsumedAMessage
 
-  private int count = 0
+  private volatile int count = 0
 
   @Test
   void testSendMessagesAndVerify() {
@@ -60,18 +74,20 @@ class SendAndVerifyMessagesTest extends BasicTest {
 
         messageTable.remove(id)
 
-        Thread.sleep(500)
+        if (CONSUMER_THREAD_WAIT) {
+          Thread.sleep(CONSUMER_THREAD_WAIT)
+        }
 
         lastTimeConsumedAMessage = System.currentTimeMillis()
       }
     }
 
     CamelContext producerContext = new DefaultCamelContext()
-    producerContext.addComponent("jms-producer", JmsComponent.jmsComponentAutoAcknowledge(ActiveMQConnections.TAULIA_AMQ_LEVELDB_FAILOVER.connectionFactory))
+    producerContext.addComponent("jms-producer", JmsComponent.jmsComponentAutoAcknowledge(CONNECTION.connectionFactory))
     producerContext.start()
 
     CamelContext consumerContext = new DefaultCamelContext()
-    consumerContext.addComponent("jms-consumer", JmsComponent.jmsComponentAutoAcknowledge(ActiveMQConnections.TAULIA_AMQ_LEVELDB_FAILOVER.connectionFactory))
+    consumerContext.addComponent("jms-consumer", JmsComponent.jmsComponentAutoAcknowledge(CONNECTION.connectionFactory))
     CONSUMER_THREAD_COUNT.times {
       consumerContext.addRoutes(new RouteBuilder() {
         public void configure() {
