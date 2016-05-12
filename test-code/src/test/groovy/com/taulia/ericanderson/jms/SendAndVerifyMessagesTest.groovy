@@ -15,9 +15,11 @@ import org.junit.Test
 import org.springframework.util.StringUtils
 
 import java.text.SimpleDateFormat
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.atomic.AtomicInteger
 
 @Log4j2
 class SendAndVerifyMessagesTest extends BasicTest {
@@ -27,24 +29,26 @@ class SendAndVerifyMessagesTest extends BasicTest {
   /* Adjustable settings
   /************************************************************/
 
-  private static final int MESSAGE_COUNT = 100
+  private static final int MESSAGE_COUNT = 5000
 
   private static final int PRODUCER_THREAD_COUNT = 20
 
   private static final int CONSUMER_THREAD_COUNT = 1
 
-  private static final int CONSUMER_THREAD_WAIT = 1000
+  private static final int CONSUMER_THREAD_WAIT = 100
 
   /**
    * Time to wait for consumers to finish consuming all messages. This is the amount of time in seconds, that the test
    * will wait since the last consumed message before terminating.
    */
-  private static final int TIME_TO_WAIT = 10
+  private static final int TIME_TO_WAIT = 120
 
   /**
    * The connection factory for the test
    */
-  private static final ActiveMQConnections CONNECTION = ActiveMQConnections.TAULIA_AMQ_FAILOVER
+  private static final ActiveMQConnections PRODUCER_CONNECTION = ActiveMQConnections.TAULIA_AMQ_FAILOVER
+  private static final ActiveMQConnections CONNSUMER_CONNECTION = ActiveMQConnections.TAULIA_AMQ_FAILOVER
+
 
   /************************************************************/
 
@@ -52,13 +56,16 @@ class SendAndVerifyMessagesTest extends BasicTest {
 
   static final Map<String, Boolean> messageTable = new Hashtable<>()
 
+  static final List<String> duplicateMessages = new CopyOnWriteArrayList<String>()
+
   private static final Random random = new Random()
 
   SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MMM dd,yyyy HH:mm:ss");
 
   volatile long lastTimeConsumedAMessage
 
-  private volatile int count = 0
+  private AtomicInteger sentCount = new AtomicInteger(0)
+  private AtomicInteger recievedCount = new AtomicInteger(0)
 
   @Test
   void testSendMessagesAndVerify() {
@@ -68,11 +75,21 @@ class SendAndVerifyMessagesTest extends BasicTest {
     def messageProcessor = new Processor() {
       public void process(Exchange exchange) {
 
+        recievedCount.andIncrement
+
         String id = exchange.getIn().getHeader(ID_KEY)
         Preconditions.checkState(!StringUtils.isEmpty(id))
-        log.info("Recieved message ${id} and sleeping ${simpleDateFormat.format(new Date(System.currentTimeMillis()))}")
 
-        messageTable.remove(id)
+        if (recievedCount.get() % 100 == 0) {
+          log.info("Recieved Count [${recievedCount.get()}], message ${id} and sleeping ${simpleDateFormat.format(new Date(System.currentTimeMillis()))}")
+        }
+
+        if (messageTable.containsKey(id)) {
+          messageTable.remove(id)
+        }
+        else {
+          duplicateMessages.add(id)
+        }
 
         if (CONSUMER_THREAD_WAIT) {
           Thread.sleep(CONSUMER_THREAD_WAIT)
@@ -83,12 +100,13 @@ class SendAndVerifyMessagesTest extends BasicTest {
     }
 
     CamelContext producerContext = new DefaultCamelContext()
-    producerContext.addComponent("jms-producer", JmsComponent.jmsComponentAutoAcknowledge(CONNECTION.connectionFactory))
+    producerContext.addComponent("jms-producer", JmsComponent.jmsComponentAutoAcknowledge(PRODUCER_CONNECTION.connectionFactory))
     producerContext.start()
 
     CamelContext consumerContext = new DefaultCamelContext()
-    consumerContext.addComponent("jms-consumer", JmsComponent.jmsComponentAutoAcknowledge(CONNECTION.connectionFactory))
+    consumerContext.addComponent("jms-consumer", JmsComponent.jmsComponentAutoAcknowledge(CONNSUMER_CONNECTION.connectionFactory))
     CONSUMER_THREAD_COUNT.times {
+
       consumerContext.addRoutes(new RouteBuilder() {
         public void configure() {
           from("jms-consumer:queue:a1.test.queue.delayed").process(messageProcessor)
@@ -109,7 +127,7 @@ class SendAndVerifyMessagesTest extends BasicTest {
 
     listOfFutures.each { it.get() }
 
-    while (! messageTable.every { it.value } && System.currentTimeMillis() - lastTimeConsumedAMessage < TIME_TO_WAIT * 1000) {
+    while (! messageTable.every { it.value } && (System.currentTimeMillis() - lastTimeConsumedAMessage < (TIME_TO_WAIT * 1000))) {
       Thread.sleep(500)
     }
 
@@ -118,7 +136,9 @@ class SendAndVerifyMessagesTest extends BasicTest {
     consumerContext.stop()
     stopwatch.stop()
 
-    assert messageTable.size() == 0
+    log.info("Sent : ${sentCount.get()} Recieved : ${recievedCount.get()}")
+
+    assert (messageTable.size() == 0 & duplicateMessages.size() == 0)
   }
 
 
@@ -136,8 +156,8 @@ class SendAndVerifyMessagesTest extends BasicTest {
 
       ProducerTemplate template = context.createProducerTemplate()
 
-      while (count < MESSAGE_COUNT) {
-        count++
+      while (sentCount.get() < MESSAGE_COUNT) {
+        sentCount.andIncrement
         String id = UUID.randomUUID()
         messageTable.put(id, false)
 
@@ -146,13 +166,22 @@ class SendAndVerifyMessagesTest extends BasicTest {
           ID : "${id}"
         ]
 
-        template.sendBodyAndHeaders(
-          "jms-producer:queue:a1.test.queue",
-          "Test Message: ID=" + id,
-          headers
-        )
+        try {
+          template.sendBodyAndHeaders(
+            "jms-producer:queue:a1.test.queue",
+            "Test Message: ID=" + id,
+            headers
+          )
+        }
+        catch (org.apache.camel.CamelExecutionException e) {
+          log.error(e.message, e)
+          messageTable.remove(id)
+          sentCount.andDecrement
+        }
 
-        log.info ("Sent message with ID ${id}")
+        if (sentCount.get() % 100 == 0) {
+          log.info ("Count: ${sentCount.get()}  Sent message with ID ${id}")
+        }
       }
     }
 

@@ -12,9 +12,9 @@ enum ActiveMQConnections {
   LOCALHOST_BROKER1('tcp://localhost:61616'),
   LOCALHOST_BROKER2('tcp://localhost:61617'),
   LOCALHOST_FAILOVER('failover:(tcp://localhost:61616,tcp://localhost:61617)'),
-  TAULIA_AMQ_BROKER1('tcp://10.140.0.251:61616', false),
-  TAULIA_AMQ_BROKER2('tcp://10.140.1.68:61616', false),
-  TAULIA_AMQ_FAILOVER('failover:(tcp://10.140.0.251:61616,tcp://10.140.1.68:61616)', false),
+  TAULIA_AMQ_BROKER1('tcp://qetest-broker1-amq.taulia.com:61616', false),
+  TAULIA_AMQ_BROKER2('tcp://qetest-broker2-amq.taulia.com:61616', false),
+  TAULIA_AMQ_FAILOVER('failover:(tcp://qetest-broker1-amq.taulia.com:61616,tcp://qetest-broker2-amq.taulia.com:61616)', false),
   TAULIA_AMQ_LEVELDB_FAILOVER('failover:(tcp://qetest-broker1-leveldb-amq.taulia.com:61616,tcp://qetest-broker2-leveldb-amq.taulia.com:61616,tcp://qetest-broker3-leveldb-amq.taulia.com:61616)', false)
 
 

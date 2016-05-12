@@ -1,0 +1,63 @@
+plugins {
+  id "com.moowork.node" version "0.12"
+}
+
+apply plugin: 'base'
+version '0.0.1'
+
+buildDir = 'dist'
+
+node {
+  version = '5.8.0'
+  npmVersion = '3.7.3'
+  download = true
+}
+
+task runDevServer(type: NpmTask) {
+  args = [
+    'start',
+    '--',
+    '--appPort=' + project.property('application.port'),
+    '--devPort=' + project.property('dev.server.port')
+  ]
+}
+
+task debugDevServer(type: NpmTask) {
+  description 'Run front-end dev server in debug mode'
+  args = [
+    'run',
+    'debug',
+    '--',
+    '--appPort=' + project.property('application.port'),
+    '--devPort=' + project.property('dev.server.port')
+  ]
+}
+
+task bundle(type: NpmTask) {
+    args = ['run', 'bundle']
+}
+
+task test(type: NpmTask) {
+  description 'Run all front-end unit tests'
+  args = ['test']
+}
+
+task testFunctional(type: NpmTask) {
+  description 'Run all front-end functional tests'
+  args = [
+    'run',
+    'test:functional',
+    '--',
+    '--baseUrl', project.property('fe.test.functional.baseUrl'),
+    '--seleniumAddress', project.property('fe.test.functional.seleniumAddress'),
+    '--browser', project.property('fe.test.functional.browser')
+  ]
+}
+
+// TODO ALAMO-896 add `testFunctional` as dependancy of `check`
+check.dependsOn(test)
+bundle.dependsOn(npm_install)
+assemble.dependsOn(bundle)
+
+
+

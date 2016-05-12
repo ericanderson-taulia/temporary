@@ -35,7 +35,7 @@ class SendMessagesToQueue extends BasicTest {
         println exchange.getIn().getHeaders()
 
         println("Recieved message and sleeping ${simpleDateFormat.format(new Date(System.currentTimeMillis()))}")
-        Thread.sleep(20000)
+        Thread.sleep(1000)
 
       }
     }
@@ -46,7 +46,7 @@ class SendMessagesToQueue extends BasicTest {
         from("jms2:queue:a1.test.queue.delayed").process(myProcessor)
       }
     })
-    context.addComponent("jms2", JmsComponent.jmsComponentAutoAcknowledge(ActiveMQConnections.TAULIA_AMQ_LEVELDB_FAILOVER.connectionFactory))
+    context.addComponent("jms2", JmsComponent.jmsComponentAutoAcknowledge(ActiveMQConnections.TAULIA_AMQ_BROKER2.connectionFactory))
     context.start()
 
     Stopwatch stopwatch = Stopwatch.createStarted()

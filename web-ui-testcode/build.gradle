@@ -1,0 +1,42 @@
+
+buildscript {
+
+  repositories {
+    mavenLocal()
+    maven {
+      credentials {
+        username = artifactoryReader
+        password = artifactoryReaderPassword
+      }
+      url "${artifactoryBase}/intapi-${project.hasProperty('release') ? 'release' : 'dev'}"
+    }
+  }
+
+  dependencies {
+    classpath 'com.amazonaws:aws-java-sdk:1.10.0'
+    classpath 'com.taulia.plugins:taulia-gradle-plugins:3.8.1-SNAPSHOT'
+  }
+
+}
+
+apply plugin: 'template-repository'
+
+description = 'AMQ Admistration Tool'
+
+allprojects {
+
+  apply plugin: 'base-project'
+  apply plugin: 'idea'
+
+  ext {
+    serverVersion = '0.9.4'
+  }
+  group = 'com.taulia.amqmanagement'
+
+}
+
+task wrapper(type: Wrapper) {
+  description = 'Configures the gradle wrapper'
+  gradleVersion = '2.4'
+}
+

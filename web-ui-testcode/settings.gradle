@@ -1,0 +1,4 @@
+include 'frontend'
+
+rootProject.name = 'app-amq-management'
+
